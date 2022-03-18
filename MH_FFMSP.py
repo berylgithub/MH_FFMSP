@@ -14,8 +14,7 @@ def ffmsp_obj(sol, data, threshold):
         - threshold, [0, m], scalar.
     '''
     # init vars:
-    n = data.shape[0]; m = data.shape[1]
-    y = 0
+    #n = data.shape[0]; m = data.shape[1]
     
     # compute the hamming distance of one cell of sol to all in data:
     hamming_array = np.not_equal(sol, data) # contains matrix of predicate function
@@ -104,7 +103,6 @@ def local_search(data, alphabet, t, init='greedy', sol=None):
                     sol[i] = pre_flip # put back the old bit
     return sol, f
 
-@profile
 def metaheuristic(data, alphabet, t, max_loop, rand, init="greedy"):
     '''
     simple idea: to avoid local minima, use perturbation - randomly swapping cells with random letters, where the random percentage is a tuning parameter  
@@ -158,6 +156,70 @@ def metaheuristic(data, alphabet, t, max_loop, rand, init="greedy"):
         #yield sol, f
     return sol, f
 
+'''
+=== directly timed version funs ===
+'''
+def metaheuristic_wt(data, alphabet, t, max_loop, rand, init="greedy", time_limit=90):
+    '''
+    timed version
+    params, same as prev methods, except:
+        - max_loop, hyperparameter determining maximum perturbation+local search ops, int scalar
+        - rand, a hyperparameter [0,1] percentage of the mutated cells, lower means faster convergence, real scalar 
+            -> seems like near 0 is a good choice
+    '''
+    # start timer:
+    start = time.time()
+
+    # init var:
+    m = data.shape[1]; alpha_size = len(alphabet)
+    threshold = int(t*m) # for obj fun
+    f=0
+    
+    # generate init sol:
+    if init == "greedy":
+        sol, f = greedy(data, alphabet, t)
+    elif init == "random":
+        sol = np.random.randint(alpha_size, size=m)
+        f = ffmsp_obj(sol, data, threshold)
+        
+    # loop the local search and perturbation:
+    i = 0
+    perturb_length = int(rand*m)
+    #print(perturb_length)
+    # do initial local search for the lower bound:
+    sol, f = local_search(data, alphabet, t, sol=sol)
+    while i<max_loop:
+        # check fi it's already time limit:
+        if time.time() - start >= time_limit: # > since there will be always time artefact (in ms)
+            #print(time.time() - start,"s")
+            #print("last sol", sol, f)
+            break
+        # perturb sol, generate random integer array [0,alpha_size] with length = perturb_length which replaces random cells:
+        part_sol = np.random.randint(alpha_size, size=perturb_length)
+        idx = np.random.randint(m, size=perturb_length) # replacement indexes
+        #print(part_sol, idx)
+        
+        # slow ver:
+        sol_perturb = np.copy(sol)
+        sol_perturb[idx] = part_sol # replace some sol components wiwth the part_sol
+        #print(sol_perturb)
+        # do local search:
+        sol_new, f_new = local_search(data, alphabet, t, sol=sol_perturb)
+        '''
+        # more efficient:
+        sol[idx] = part_sol
+        sol, f_new = local_search(data, alphabet, t, sol=sol)
+        '''
+        #sort of greedy acceptante criteria, compare with previous local minimum:
+        if f_new >= f:
+            sol = sol_new
+            f = f_new
+            print(i,"accepted",f)
+        i+=1
+        #yield sol, f
+    return sol, f
+
+
 if __name__ == "__main__":
     filename = "problem_instances/100-300-001.txt"
     data = []
@@ -190,7 +252,9 @@ if __name__ == "__main__":
     print(ffmsp_obj(sol, dat, 4))
     '''
     start = time.time()
-    metaheuristic(data, alphabet, 0.8, 100, 1e-2, init="greedy")
+    #metaheuristic(data, alphabet, 0.8, 100, 1e-2, init="greedy")
+    sol, f = metaheuristic_wt(data, alphabet, 0.8, int(1e7), 1e-2, init="greedy", time_limit=90)
+    print(sol, f)
     elapsed = time.time()-start
     print(elapsed)
     
