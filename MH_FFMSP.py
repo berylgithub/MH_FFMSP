@@ -214,47 +214,55 @@ def metaheuristic_wt(data, alphabet, t, max_loop, rand, init="greedy", time_limi
         if f_new >= f:
             sol = sol_new
             f = f_new
-            print(i,"accepted",f)
+            #print(i,"accepted",f)
         i+=1
         #yield sol, f
     return sol, f
 
 
 if __name__ == "__main__":
-    filename = "problem_instances/100-300-001.txt"
-    data = []
-    mapper = {'A':0, 'C':1, 'T':2, 'G':3} #char to int
-    rev_mapper = {0:'A', 1:'C' , 2:'T', 3:'G'} #int to char, whenever needed
-    alphabet = (0,1,2,3)
-    # read per char, for matrix data structure, while mapping ['A', 'C', 'T', 'G'] to [0,1,2,3] at the same time:
-    with open(filename) as fileobj:
-        for line in fileobj:
-            d = []
-            line = line.rstrip("\n")
-            for ch in line:
-                mapch = mapper[ch]
-                d.append(mapch)
-            data.append(d)
-    n = len(data); m = len(data[0])
-    data = np.array(data)
-    #count = np.char.count(data[0], 'A')
-    count = np.count_nonzero(data == mapper['A'], axis=0)
+    def unit_test():
+        '''individual tests'''
+        filename = "problem_instances/100-300-001.txt"
+        data = []
+        mapper = {'A':0, 'C':1, 'T':2, 'G':3} #char to int
+        rev_mapper = {0:'A', 1:'C' , 2:'T', 3:'G'} #int to char, whenever needed
+        alphabet = (0,1,2,3)
+        # read per char, for matrix data structure, while mapping ['A', 'C', 'T', 'G'] to [0,1,2,3] at the same time:
+        with open(filename) as fileobj:
+            for line in fileobj:
+                d = []
+                line = line.rstrip("\n")
+                for ch in line:
+                    mapch = mapper[ch]
+                    d.append(mapch)
+                data.append(d)
+        n = len(data); m = len(data[0])
+        data = np.array(data)
+        #count = np.char.count(data[0], 'A')
+        count = np.count_nonzero(data == mapper['A'], axis=0)
 
-    #ffmsp_obj(np.random.randint(0, 4, 300), data, 0.8*300)
-    '''
-    sol = np.array([0,1,3,3])
-    dat = np.array([
-                    [0, 1, 3, 3],
-                    [0, 2, 0, 2],
-                    [3, 1, 3, 0],
-                    [0,2,3,3]
-                    ])
-    print(ffmsp_obj(sol, dat, 4))
-    '''
-    start = time.time()
-    #metaheuristic(data, alphabet, 0.8, 100, 1e-2, init="greedy")
-    sol, f = metaheuristic_wt(data, alphabet, 0.8, int(1e7), 1e-2, init="greedy", time_limit=90)
-    print(sol, f)
-    elapsed = time.time()-start
-    print(elapsed)
+        #ffmsp_obj(np.random.randint(0, 4, 300), data, 0.8*300)
+        '''
+        sol = np.array([0,1,3,3])
+        dat = np.array([
+                        [0, 1, 3, 3],
+                        [0, 2, 0, 2],
+                        [3, 1, 3, 0],
+                        [0,2,3,3]
+                        ])
+        print(ffmsp_obj(sol, dat, 4))
+        '''
+        start = time.time()
+        #metaheuristic(data, alphabet, 0.8, 100, 1e-2, init="greedy")
+        sol, f = metaheuristic_wt(data, alphabet, 0.8, int(1e7), 1e-2, init="greedy", time_limit=90)
+        print(sol, f)
+        elapsed = time.time()-start
+        print(elapsed)
     
+    def evaluation_statistics():
+        ''' do the algorithms evaluation across all test instances then compute the statistics'''
+        print()
+
+    '''=== actual main starts here ==='''
+    unit_test()
