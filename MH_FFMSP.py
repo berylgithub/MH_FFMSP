@@ -246,12 +246,12 @@ def cplex_ffmsp(data, alphabet, t, time_limit=90):
     # set everything:
     model.set_objective('max', obj)
     model.set_time_limit(time_limit)
-    model.print_information()    
-    print(model.export_as_lp_string())
+    #model.print_information()    
+    #print(model.export_as_lp_string())
 
     # solve:
     model.solve()
-    print("obj = ",model.objective_value)
+    #print("obj = ",model.objective_value)
     #model.print_solution()
     return model.objective_value
     
