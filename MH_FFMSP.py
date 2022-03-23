@@ -1,6 +1,6 @@
 import numpy as np
 import time
-
+from docplex.mp.model import Model # CPLEX lib
 
 def ffmsp_obj(sol, data, threshold):
     '''objective function of the FFMSP:
@@ -167,9 +167,6 @@ def metaheuristic_wt(data, alphabet, t, max_loop, rand, init="greedy", time_limi
         - rand, a hyperparameter [0,1] percentage of the mutated cells, lower means faster convergence, real scalar 
             -> seems like near 0 is a good choice
     '''
-    # start timer:
-    start = time.time()
-
     # init var:
     m = data.shape[1]; alpha_size = len(alphabet)
     threshold = int(t*m) # for obj fun
@@ -182,6 +179,9 @@ def metaheuristic_wt(data, alphabet, t, max_loop, rand, init="greedy", time_limi
         sol = np.random.randint(alpha_size, size=m)
         f = ffmsp_obj(sol, data, threshold)
         
+    # start timer:
+    start = time.time()
+    
     # loop the local search and perturbation:
     i = 0
     perturb_length = int(rand*m)
@@ -219,7 +219,42 @@ def metaheuristic_wt(data, alphabet, t, max_loop, rand, init="greedy", time_limi
         #yield sol, f
     return sol, f
 
+def cplex_ffmsp(data, alphabet, t, time_limit=90):
+    '''
+    CPLEX version opt for FFMSP, in ILP formulation.
+    the parameters are the subset parameters of MH algo ver.
+    '''
+    n = data.shape[0]; m = data.shape[1]; alpha_size = len(alphabet)
+    threshold = int(t*m)
 
+    model = Model(name='FFMSP')
+    y = model.binary_var_list(n, name="y") # objective var, length n vector
+    x = model.binary_var_matrix(m, alpha_size, name="x") # matrix with (m, alpha_size) shape
+    s = data.T # according to the ILP formulation in the .pdf, for clarity, matrix with (m, n) shape
+
+    # m equality constraints:
+    for i in range(m):
+        model.add_constraint(model.sum(x[i,j] for j in range(alpha_size)) == 1)
+    
+    # n inequality constraints:
+    for r in range(n):
+        model.add_constraint(model.sum(x[i,s[i,r]] for i in range(m)) <= m - threshold*y[r])
+    #print(threshold*y[0])
+    # objective function:
+    obj = model.sum(y)
+
+    # set everything:
+    model.set_objective('max', obj)
+    model.set_time_limit(time_limit)
+    model.print_information()    
+    print(model.export_as_lp_string())
+
+    # solve:
+    model.solve()
+    print("obj = ",model.objective_value)
+    model.print_solution()
+
+    #
 if __name__ == "__main__":
     def unit_test():
         '''individual tests'''
@@ -253,12 +288,15 @@ if __name__ == "__main__":
                         ])
         print(ffmsp_obj(sol, dat, 4))
         '''
+        '''
         start = time.time()
         #metaheuristic(data, alphabet, 0.8, 100, 1e-2, init="greedy")
         sol, f = metaheuristic_wt(data, alphabet, 0.8, int(1e7), 1e-2, init="greedy", time_limit=90)
         print(sol, f)
         elapsed = time.time()-start
         print(elapsed)
+        '''
+        cplex_ffmsp(data, alphabet, 0.8, time_limit=5)
     
     def evaluation_statistics():
         ''' do the algorithms evaluation across all test instances then compute the statistics'''
