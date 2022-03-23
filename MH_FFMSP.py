@@ -252,9 +252,9 @@ def cplex_ffmsp(data, alphabet, t, time_limit=90):
     # solve:
     model.solve()
     print("obj = ",model.objective_value)
-    model.print_solution()
-
-    #
+    #model.print_solution()
+    return model.objective_value
+    
 if __name__ == "__main__":
     def unit_test():
         '''individual tests'''
@@ -296,8 +296,12 @@ if __name__ == "__main__":
         elapsed = time.time()-start
         print(elapsed)
         '''
-        cplex_ffmsp(data, alphabet, 0.8, time_limit=5)
-    
+        time_limit = 5
+        objs = np.zeros((2))
+        objs[0] = cplex_ffmsp(data, alphabet, 0.8, time_limit=time_limit)
+        _, objs[1] = metaheuristic_wt(data, alphabet, 0.8, int(1e7), 1e-2, init="greedy", time_limit=time_limit)
+        print(objs)
+
     def evaluation_statistics():
         ''' do the algorithms evaluation across all test instances then compute the statistics'''
         print()
