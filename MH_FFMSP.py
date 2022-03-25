@@ -1,3 +1,6 @@
+import collections
+from os import walk
+import glob
 import numpy as np
 import time
 from docplex.mp.model import Model # CPLEX lib
@@ -246,7 +249,7 @@ def cplex_ffmsp(data, alphabet, t, time_limit=90):
     # set everything:
     model.set_objective('max', obj)
     model.set_time_limit(time_limit)
-    #model.print_information()    
+    #model.print_information()
     #print(model.export_as_lp_string())
 
     # solve:
@@ -255,6 +258,24 @@ def cplex_ffmsp(data, alphabet, t, time_limit=90):
     #model.print_solution()
     return model.objective_value
     
+'''===utils==='''
+def load_data(filename, mapper):
+    '''
+    load instance file then process the data into matrix 
+    '''
+    data = []
+    # read per char, for matrix data structure, while mapping ['A', 'C', 'T', 'G'] to [0,1,2,3] at the same time:
+    with open(filename) as fileobj:
+        for line in fileobj:
+            d = []
+            line = line.rstrip("\n")
+            for ch in line:
+                mapch = mapper[ch]
+                d.append(mapch)
+            data.append(d)
+    data = np.array(data)
+    return data
+
 if __name__ == "__main__":
     def unit_test():
         '''individual tests'''
@@ -304,7 +325,45 @@ if __name__ == "__main__":
 
     def evaluation_statistics():
         ''' do the algorithms evaluation across all test instances then compute the statistics'''
-        print()
+
+
+        # global info:
+        mapper = {'A':0, 'C':1, 'T':2, 'G':3} #char to int
+        rev_mapper = {0:'A', 1:'C' , 2:'T', 3:'G'} #int to char, whenever needed
+        alphabet = (0,1,2,3)
+
+        # loop instances:
+        dir = "problem_instances"
+        N_list = ["100","200"]
+        M_list = ["300", "600", "800"]
+        t_list = [0.75, 0.8, 0.85]
+        f_list = [greedy, local_search]
+        fstring_list = ["greedy", "local_search"]
+        stats = {"n":[],"m":[],"i":[],"t":[],"algo":[], "obj":[]} # store results here
+        for n in N_list[:2]: # per n:
+            for m in M_list[:2]: # per m:
+                filename = dir+"/"+n+"-"+m+"*.txt"
+                files_instance = glob.glob(filename)
+                i = 0
+                for inst in files_instance[:2]: # per instance:
+                    data = load_data(inst, mapper)
+                    for t in t_list: # per t:
+                        for idx in range(len(f_list)): # per fun, too lazy to enumerate the args, only 4 algos anyways... :
+                            if idx == 0: # greedy
+                                _, obj = f_list[idx](data, alphabet, t)
+                            elif idx == 1: # local
+                                _, obj = f_list[idx](data, alphabet, t, init="greedy")
+                            # add meta and cplex below later...
+                            stats["n"].append(n)
+                            stats["m"].append(m)
+                            stats["i"].append(i)
+                            stats["t"].append(t)
+                            stats["algo"].append(fstring_list[idx])
+                            stats["obj"].append(obj)
+                    i += 1
+        
+        print(len(stats["n"]))
 
     '''=== actual main starts here ==='''
-    unit_test()
+    #unit_test()
+    evaluation_statistics()
