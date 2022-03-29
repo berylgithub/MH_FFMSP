@@ -4,6 +4,8 @@ import glob
 import numpy as np
 import time
 from docplex.mp.model import Model # CPLEX lib
+import pandas as pd # visu/table/etc
+import json
 
 def ffmsp_obj(sol, data, threshold):
     '''objective function of the FFMSP:
@@ -337,9 +339,7 @@ if __name__ == "__main__":
         N_list = ["100","200"]
         M_list = ["300", "600", "800"]
         t_list = [0.75, 0.8, 0.85]
-        f_list = [greedy, local_search]
-        fstring_list = ["greedy", "local_search"]
-        stats = {"n":[],"m":[],"i":[],"t":[],"algo":[], "obj":[]} # store results here
+        stats = {"n":[],"m":[],"i":[],"t":[],"greedy":[], "local":[]} # store results here
         for n in N_list[:2]: # per n:
             for m in M_list[:2]: # per m:
                 filename = dir+"/"+n+"-"+m+"*.txt"
@@ -348,21 +348,21 @@ if __name__ == "__main__":
                 for inst in files_instance[:2]: # per instance:
                     data = load_data(inst, mapper)
                     for t in t_list: # per t:
-                        for idx in range(len(f_list)): # per fun, too lazy to enumerate the args, only 4 algos anyways... :
-                            if idx == 0: # greedy
-                                _, obj = f_list[idx](data, alphabet, t)
-                            elif idx == 1: # local
-                                _, obj = f_list[idx](data, alphabet, t, init="greedy")
-                            # add meta and cplex below later...
-                            stats["n"].append(n)
-                            stats["m"].append(m)
-                            stats["i"].append(i)
-                            stats["t"].append(t)
-                            stats["algo"].append(fstring_list[idx])
-                            stats["obj"].append(obj)
+                        _, obj = greedy(data, alphabet, t); stats["greedy"].append(obj)
+                        _, obj = local_search(data, alphabet, t, init="greedy"); stats["local"].append(obj)
+                        # add meta and cplex below later...
+                        stats["n"].append(n)
+                        stats["m"].append(m)
+                        stats["i"].append(i)
+                        stats["t"].append(t)
                     i += 1
-        
-        print(len(stats["n"]))
+        with open('stats.json', 'w') as f:
+            json.dump(stats, f)
+        f = open('stats.json')
+        stats = json.load(f)
+        df = pd.DataFrame(stats)
+        print(df)
+        f.close()
 
     '''=== actual main starts here ==='''
     #unit_test()
