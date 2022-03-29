@@ -333,13 +333,14 @@ if __name__ == "__main__":
         mapper = {'A':0, 'C':1, 'T':2, 'G':3} #char to int
         rev_mapper = {0:'A', 1:'C' , 2:'T', 3:'G'} #int to char, whenever needed
         alphabet = (0,1,2,3)
+        time_limit = 1 # for meta and cplex
 
         # loop instances:
         dir = "problem_instances"
         N_list = ["100","200"]
         M_list = ["300", "600", "800"]
         t_list = [0.75, 0.8, 0.85]
-        stats = {"n":[],"m":[],"i":[],"t":[],"greedy":[], "local":[]} # store results here
+        stats = {"n":[],"m":[],"i":[],"t":[],"greedy":[], "local":[], "meta":[], "cplex":[]} # store results here
         for n in N_list[:2]: # per n:
             for m in M_list[:2]: # per m:
                 filename = dir+"/"+n+"-"+m+"*.txt"
@@ -350,11 +351,13 @@ if __name__ == "__main__":
                     for t in t_list: # per t:
                         _, obj = greedy(data, alphabet, t); stats["greedy"].append(obj)
                         _, obj = local_search(data, alphabet, t, init="greedy"); stats["local"].append(obj)
-                        # add meta and cplex below later...
+                        _, obj = metaheuristic_wt(data, alphabet, t, int(1e9), 1e-2, init="greedy", time_limit=time_limit); stats["meta"].append(obj)
+                        obj = cplex_ffmsp(data, alphabet, t, time_limit=time_limit); stats["cplex"].append(obj)
                         stats["n"].append(n)
                         stats["m"].append(m)
                         stats["i"].append(i)
                         stats["t"].append(t)
+                        print(n, m, i, t, "done!")
                     i += 1
         with open('stats.json', 'w') as f:
             json.dump(stats, f)
