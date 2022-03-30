@@ -233,6 +233,7 @@ def cplex_ffmsp(data, alphabet, t, time_limit=90):
     threshold = int(t*m)
 
     model = Model(name='FFMSP')
+    model.context.cplex_parameters.threads = 1 # set core usage
     y = model.binary_var_list(n, name="y") # objective var, length n vector
     x = model.binary_var_matrix(m, alpha_size, name="x") # matrix with (m, alpha_size) shape
     s = data.T # according to the ILP formulation in the .pdf, for clarity, matrix with (m, n) shape
@@ -333,35 +334,48 @@ if __name__ == "__main__":
         mapper = {'A':0, 'C':1, 'T':2, 'G':3} #char to int
         rev_mapper = {0:'A', 1:'C' , 2:'T', 3:'G'} #int to char, whenever needed
         alphabet = (0,1,2,3)
-        time_limit = 1 # for meta and cplex
+        time_limit = 90 # for meta and cplex
 
         # loop instances:
         dir = "problem_instances"
         N_list = ["100","200"]
         M_list = ["300", "600", "800"]
         t_list = [0.75, 0.8, 0.85]
-        stats = {"n":[],"m":[],"i":[],"t":[],"greedy":[], "local":[], "meta":[], "cplex":[]} # store results here
-        for n in N_list[:2]: # per n:
-            for m in M_list[:2]: # per m:
+        #stats = {"n":[],"m":[],"i":[],"t":[],"greedy":[], "local":[], "meta":[], "cplex":[]} # store results here
+        stats = {"n":[],"m":[],"i":[],"t":[], "meta":[]}
+        for n in N_list: # per n:
+            for m in M_list: # per m:
                 filename = dir+"/"+n+"-"+m+"*.txt"
                 files_instance = glob.glob(filename)
                 i = 0
-                for inst in files_instance[:2]: # per instance:
+                for inst in files_instance: # per instance:
                     data = load_data(inst, mapper)
                     for t in t_list: # per t:
+                        '''
+                        obj = cplex_ffmsp(data, alphabet, t, time_limit=time_limit); stats["cplex"].append(obj)
                         _, obj = greedy(data, alphabet, t); stats["greedy"].append(obj)
                         _, obj = local_search(data, alphabet, t, init="greedy"); stats["local"].append(obj)
-                        _, obj = metaheuristic_wt(data, alphabet, t, int(1e9), 1e-2, init="greedy", time_limit=time_limit); stats["meta"].append(obj)
-                        obj = cplex_ffmsp(data, alphabet, t, time_limit=time_limit); stats["cplex"].append(obj)
+                        '''
+                        _, obj = metaheuristic_wt(data, alphabet, t, int(1e9), 5e-2, init="random", time_limit=time_limit); stats["meta"].append(obj)
                         stats["n"].append(n)
                         stats["m"].append(m)
                         stats["i"].append(i)
                         stats["t"].append(t)
                         print(n, m, i, t, "done!")
                     i += 1
+        '''
         with open('stats.json', 'w') as f:
             json.dump(stats, f)
         f = open('stats.json')
+        stats = json.load(f)
+        df = pd.DataFrame(stats)
+        print(df)
+        f.close()
+        '''
+        # meta only expermients:
+        with open('stats_meta.json', 'w') as f:
+            json.dump(stats, f)
+        f = open('stats_meta.json')
         stats = json.load(f)
         df = pd.DataFrame(stats)
         print(df)
