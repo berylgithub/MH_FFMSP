@@ -54,8 +54,7 @@ def greedy(data, alphabet, t):
     # count the occurences of each alphabet column wise:
     for i in range(alpha_size):
         freq_mat[i] = np.count_nonzero(data == alphabet[i], axis = 0) # alphabet[i] == i in this case, can use whichever
-    
-    #print(freq_mat)
+
     sol = np.argmin(freq_mat, axis=0) # get char with lowest frequency for each position [0, m]
     f = ffmsp_obj(sol, data, threshold) # compute obj fun
     return sol, f
@@ -89,17 +88,11 @@ def local_search(data, alphabet, t, init='greedy', sol=None):
     for i in range(m):
         for j in range(alpha_size):
             if sol[i] != alphabet[j]: # exclude current char
-                # implicitly flip bit, check if better - if yes then stop and check next pos:
-                # slow boi:
-                #sol_new = np.copy(sol) # need to copy since numpy by default refers to memory instead. Need to replace with more eficient op
-                #sol_new[i] = j
-                #f_new = ffmsp_obj(sol_new, data, threshold)
+                # implicitly flip bit, check if better - then check next pos:
                 # more efficient one:
                 pre_flip = sol[i] # store the unflipped bit
                 sol[i] = j # flip the bit
                 f_new = ffmsp_obj(sol, data, threshold)
-                #print(sol_new, f_new)
-                #print(sol, f, i, j, sol_new, f_new)
                 if f_new >= f:
                     #sol = sol_new; f = f_new
                     f = f_new
@@ -132,31 +125,20 @@ def metaheuristic(data, alphabet, t, max_loop, rand, init="greedy"):
     # loop the local search and perturbation:
     i = 0
     perturb_length = int(rand*m)
-    print(perturb_length)
     # do initial local search for the lower bound:
     sol, f = local_search(data, alphabet, t, sol=sol)
     while i<max_loop:
         # perturb sol, generate random integer array [0,alpha_size] with length = perturb_length which replaces random cells:
         part_sol = np.random.randint(alpha_size, size=perturb_length)
         idx = np.random.randint(m, size=perturb_length) # replacement indexes
-        #print(part_sol, idx)
-        
-        # slow ver:
         sol_perturb = np.copy(sol)
         sol_perturb[idx] = part_sol # replace some sol components wiwth the part_sol
-        #print(sol_perturb)
         # do local search:
         sol_new, f_new = local_search(data, alphabet, t, sol=sol_perturb)
-        '''
-        # more efficient:
-        sol[idx] = part_sol
-        sol, f_new = local_search(data, alphabet, t, sol=sol)
-        '''
         #sort of greedy acceptante criteria, compare with previous local minimum:
         if f_new >= f:
             sol = sol_new
             f = f_new
-            print(i,"accepted",f)
         i+=1
         #yield sol, f
     return sol, f
@@ -190,38 +172,26 @@ def metaheuristic_wt(data, alphabet, t, max_loop, rand, init="greedy", time_limi
     # loop the local search and perturbation:
     i = 0
     perturb_length = int(rand*m)
-    #print(perturb_length)
     # do initial local search for the lower bound:
     sol, f = local_search(data, alphabet, t, sol=sol)
     while i<max_loop:
         # check fi it's already time limit:
         if time.time() - start >= time_limit: # > since there will be always time artefact (in ms)
-            #print(time.time() - start,"s")
-            #print("last sol", sol, f)
             break
         # perturb sol, generate random integer array [0,alpha_size] with length = perturb_length which replaces random cells:
         part_sol = np.random.randint(alpha_size, size=perturb_length)
         idx = np.random.randint(m, size=perturb_length) # replacement indexes
-        #print(part_sol, idx)
         
-        # slow ver:
         sol_perturb = np.copy(sol)
         sol_perturb[idx] = part_sol # replace some sol components wiwth the part_sol
-        #print(sol_perturb)
         # do local search:
         sol_new, f_new = local_search(data, alphabet, t, sol=sol_perturb)
-        '''
-        # more efficient:
-        sol[idx] = part_sol
-        sol, f_new = local_search(data, alphabet, t, sol=sol)
-        '''
+
         #sort of greedy acceptante criteria, compare with previous local minimum:
         if f_new >= f:
             sol = sol_new
             f = f_new
-            #print(i,"accepted",f)
         i+=1
-        #yield sol, f
     return sol, f
 
 def cplex_ffmsp(data, alphabet, t, time_limit=90):
@@ -328,11 +298,9 @@ if __name__ == "__main__":
 
     def evaluation_statistics():
         ''' do the algorithms evaluation across all test instances then compute the statistics'''
-
-
         # global info:
-        mapper = {'A':0, 'C':1, 'T':2, 'G':3} #char to int
-        rev_mapper = {0:'A', 1:'C' , 2:'T', 3:'G'} #int to char, whenever needed
+        mapper = {'A':0, 'C':1, 'T':2, 'G':3} # char to int
+        rev_mapper = {0:'A', 1:'C' , 2:'T', 3:'G'} # int to char, whenever needed
         alphabet = (0,1,2,3)
         time_limit = 90 # for meta and cplex
 
@@ -341,8 +309,7 @@ if __name__ == "__main__":
         N_list = ["100","200"]
         M_list = ["300", "600", "800"]
         t_list = [0.75, 0.8, 0.85]
-        #stats = {"n":[],"m":[],"i":[],"t":[],"greedy":[], "local":[], "meta":[], "cplex":[]} # store results here
-        stats = {"n":[],"m":[],"i":[],"t":[], "meta":[]}
+        stats = {"n":[],"m":[],"i":[],"t":[],"greedy":[], "local":[], "meta":[], "cplex":[]} # store results here
         for n in N_list: # per n:
             for m in M_list: # per m:
                 filename = dir+"/"+n+"-"+m+"*.txt"
