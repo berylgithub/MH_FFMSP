@@ -351,19 +351,17 @@ if __name__ == "__main__":
                 for inst in files_instance: # per instance:
                     data = load_data(inst, mapper)
                     for t in t_list: # per t:
-                        '''
                         obj = cplex_ffmsp(data, alphabet, t, time_limit=time_limit); stats["cplex"].append(obj)
                         _, obj = greedy(data, alphabet, t); stats["greedy"].append(obj)
                         _, obj = local_search(data, alphabet, t, init="greedy"); stats["local"].append(obj)
-                        '''
-                        _, obj = metaheuristic_wt(data, alphabet, t, int(1e9), 5e-2, init="random", time_limit=time_limit); stats["meta"].append(obj)
+                        _, obj = metaheuristic_wt(data, alphabet, t, int(1e9), 5e-2, init="greedy", time_limit=time_limit); stats["meta"].append(obj)
                         stats["n"].append(n)
                         stats["m"].append(m)
                         stats["i"].append(i)
                         stats["t"].append(t)
                         print(n, m, i, t, "done!")
                     i += 1
-        '''
+        
         with open('stats.json', 'w') as f:
             json.dump(stats, f)
         f = open('stats.json')
@@ -371,15 +369,7 @@ if __name__ == "__main__":
         df = pd.DataFrame(stats)
         print(df)
         f.close()
-        '''
-        # meta only expermients:
-        with open('stats_meta.json', 'w') as f:
-            json.dump(stats, f)
-        f = open('stats_meta.json')
-        stats = json.load(f)
-        df = pd.DataFrame(stats)
-        print(df)
-        f.close()
+        
 
     '''=== actual main starts here ==='''
     #unit_test()
